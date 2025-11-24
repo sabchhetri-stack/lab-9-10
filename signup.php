@@ -2,57 +2,64 @@
 session_start();
 require_once "includes/db.php";
 
-// Get form data (MUST match signupform.php)
-$fname      = $_POST['fname'];
-$lname      = $_POST['lname'];
-$username   = $_POST['username'];
-$email      = $_POST['email'];
-$password   = $_POST['password'];
-$confirm    = $_POST['confirm_password'];
-$address    = $_POST['address'];
-$city       = $_POST['city'];
-$province   = $_POST['province'];
-$postal     = $_POST['postal'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-// Check password match
-if ($password !== $confirm) {
-    die("Passwords do not match.");
-}
+    $fname = trim($_POST['fname'] ?? '');
+    $lname = trim($_POST['lname'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm = $_POST['confirm_password'] ?? '';
+    $address = trim($_POST['address'] ?? '');
+    $city = trim($_POST['city'] ?? '');
+    $province = trim($_POST['province'] ?? '');
+    $postal = trim($_POST['postal'] ?? '');
 
-// Hash password
-$hashed = password_hash($password, PASSWORD_DEFAULT);
+    if ($password !== $confirm) {
+        die("Passwords do not match.");
+    }
 
-// Correct SQL for YOUR TABLE STRUCTURE
-$sql = "INSERT INTO users 
-        (first_name, last_name, username, email, password, address, city, province, postal_code)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    if ($fname === '' || $lname === '' || $username === '' || $email === '' || $password === '') {
+        die("Please fill in all required fields.");
+    }
 
-$stmt = $mysqli->prepare($sql);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        die("Please provide a valid email address.");
+    }
 
-$stmt->bind_param(
-    "sssssssss",
-    $fname,
-    $lname,
-    $username,
-    $email,
-    $hashed,
-    $address,
-    $city,
-    $province,
-    $postal
-);
+    $hashed = password_hash($password, PASSWORD_DEFAULT);
 
-// Execute
-if ($stmt->execute()) {
+    $sql = "INSERT INTO users 
+            (first_name, last_name, username, email, password, address, city, province, postal_code)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    // Start session for logged-in user
-    $_SESSION['user_id'] = $stmt->insert_id;
-    $_SESSION['username'] = $username;
+    $stmt = $mysqli->prepare($sql);
 
-    header("Location: welcome.php");
-    exit;
+    $stmt->bind_param(
+        "sssssssss",
+        $fname,
+        $lname,
+        $username,
+        $email,
+        $hashed,
+        $address,
+        $city,
+        $province,
+        $postal
+    );
+
+    if ($stmt->execute()) {
+        $_SESSION['user_id'] = $stmt->insert_id;
+        $_SESSION['username'] = $username;
+
+        header("Location: welcome.php");
+        exit;
+    } else {
+        echo "Database Error: " . $stmt->error;
+    }
 
 } else {
-    echo "Database Error: " . $stmt->error;
+    header('Location: signupform.php');
+    exit;
 }
 ?>
