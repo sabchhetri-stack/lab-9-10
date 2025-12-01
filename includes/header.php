@@ -35,7 +35,7 @@ if (!isset($title)) $title = "My Site";
 
 <nav class="navbar navbar-expand-lg bg-secondary mb-5">
     <div class="container-fluid">
-        <a id="algoma-link" class="navbar-brand text-white" href="algomau.php" data-external="https://algomau.ca">Algoma University</a>
+        <a id="algoma-link" class="navbar-brand text-white" href="#" data-external="https://algomau.ca">Algoma University</a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
@@ -73,7 +73,8 @@ if (!isset($title)) $title = "My Site";
 <main class="container-fluid">
 
 <script>
-    (function(){
+    // Bind after DOM ready to ensure elements exist and prevent navigation if JS fails
+    document.addEventListener('DOMContentLoaded', function(){
         var link = document.getElementById('algoma-link');
         var container = document.getElementById('external-frame-container');
         var iframe = document.getElementById('external-frame');
@@ -82,36 +83,33 @@ if (!isset($title)) $title = "My Site";
 
         if (!link) return;
 
+        // Make sure href won't navigate away if JS is active/inactive
+        link.setAttribute('href', '#');
+
         function sizeContainerBelowHeader() {
-            // compute header/navbar bottom so iframe sits below it reliably
             var headerEl = document.querySelector('nav.navbar');
             var topOffset = 0;
             if (headerEl) {
                 var rect = headerEl.getBoundingClientRect();
-                // use rect.bottom to get the pixel position below the navbar
                 topOffset = Math.ceil(rect.bottom);
             }
-            // set top and height so the header remains visible
             container.style.top = topOffset + 'px';
             container.style.height = 'calc(100% - ' + topOffset + 'px)';
-            // ensure the iframe fills the remaining area under the bar
             var barH = document.getElementById('external-frame-bar').getBoundingClientRect().height;
             iframe.style.height = 'calc(100% - ' + Math.ceil(barH) + 'px)';
         }
 
         function openExternal(e){
             var url = link.getAttribute('data-external') || link.href;
-            // Try to load in iframe first
+            // Prevent navigation for normal clicks
+            if (e) e.preventDefault();
+
             try {
-                // size container before showing to avoid covering header
                 sizeContainerBelowHeader();
                 iframe.src = url;
                 title.textContent = url;
                 container.style.display = 'block';
-                // Prevent default navigation
-                e && e.preventDefault();
             } catch (err) {
-                // Fallback: navigate in same window
                 window.location.href = url;
             }
         }
@@ -127,27 +125,24 @@ if (!isset($title)) $title = "My Site";
             container.style.display = 'none';
         });
 
-        // Recompute sizes when window resizes while container is visible
         window.addEventListener('resize', function(){
             if (container.style.display === 'block') {
                 try { sizeContainerBelowHeader(); } catch(e){}
             }
         });
 
-        // If iframe fails to load due to X-Frame-Options, detect and fallback after a short timeout
+        // Fallback if iframe embedding blocked: catch cross-origin access on load
         iframe.addEventListener('load', function(){
-            // A simple heuristic: if iframe's location cannot be read or contentWindow.document.body is empty, we can't reliably detect cross-origin denial.
-            // We'll attempt to access a simple property; if it throws, we assume cross-origin and embedding may be blocked.
             try {
-                // Accessing href will throw for cross-origin, but some browsers allow it; so use a timeout fallback
                 var doc = iframe.contentDocument || iframe.contentWindow.document;
-                // If we get here, embedding succeeded (same-origin) — nothing else to do.
             } catch (err) {
-                // Likely blocked by X-Frame-Options or CSP. Fallback to navigating in same window.
                 var url = link.getAttribute('data-external') || link.href;
                 container.style.display = 'none';
                 window.location.href = url;
             }
         });
-    })();
+
+        // Debug: log that script initialized (open DevTools console to see this)
+        if (window.console && console.log) console.log('Algoma iframe script initialized');
+    });
 </script>
