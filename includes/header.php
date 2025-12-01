@@ -26,6 +26,8 @@ if (!isset($title)) $title = "My Site";
     main {
         min-height: calc(100vh - 140px); 
     }
+    /* Ensure navbar stays above iframe overlay */
+    nav.navbar { position: relative; z-index: 1100; }
     </style>
 </head>
 
@@ -59,7 +61,7 @@ if (!isset($title)) $title = "My Site";
     </div>
 </nav>
 
-<!-- External site iframe container (hidden by default). Click the Algoma University link to load the site here. -->
+
 <div id="external-frame-container" style="display:none; position:fixed; left:0; right:0; bottom:0; top:0; z-index:1050; background:#fff;">
     <div id="external-frame-bar" style="height:48px; background:#343a40; display:flex; align-items:center; padding:0 1rem;">
         <button id="external-frame-close" class="btn btn-sm btn-light">Close</button>
@@ -81,17 +83,20 @@ if (!isset($title)) $title = "My Site";
         if (!link) return;
 
         function sizeContainerBelowHeader() {
-            // compute header/navbar height so iframe sits below it
+            // compute header/navbar bottom so iframe sits below it reliably
             var headerEl = document.querySelector('nav.navbar');
-            var headerH = 0;
+            var topOffset = 0;
             if (headerEl) {
-                headerH = Math.ceil(headerEl.getBoundingClientRect().height);
+                var rect = headerEl.getBoundingClientRect();
+                // use rect.bottom to get the pixel position below the navbar
+                topOffset = Math.ceil(rect.bottom);
             }
             // set top and height so the header remains visible
-            container.style.top = headerH + 'px';
-            container.style.height = 'calc(100% - ' + headerH + 'px)';
+            container.style.top = topOffset + 'px';
+            container.style.height = 'calc(100% - ' + topOffset + 'px)';
             // ensure the iframe fills the remaining area under the bar
-            iframe.style.height = 'calc(100% - ' + document.getElementById('external-frame-bar').getBoundingClientRect().height + 'px)';
+            var barH = document.getElementById('external-frame-bar').getBoundingClientRect().height;
+            iframe.style.height = 'calc(100% - ' + Math.ceil(barH) + 'px)';
         }
 
         function openExternal(e){
