@@ -35,7 +35,7 @@ if (!isset($title)) $title = "My Site";
 
 <nav class="navbar navbar-expand-lg bg-secondary mb-5">
     <div class="container-fluid">
-        <a id="algoma-link" class="navbar-brand text-white" href="#" data-external="https://algomau.ca">Algoma University</a>
+        <a id="algoma-link" class="navbar-brand text-white" href="#" data-external="https://algomau.ca" data-local="algomau.php">Algoma University</a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
@@ -100,14 +100,21 @@ if (!isset($title)) $title = "My Site";
         }
 
         function openExternal(e){
+            var local = link.getAttribute('data-local');
             var url = link.getAttribute('data-external') || link.href;
             // Prevent navigation for normal clicks
             if (e) e.preventDefault();
 
             try {
                 sizeContainerBelowHeader();
-                iframe.src = url;
-                title.textContent = url;
+                // Load the local page into the overlay iframe so the browser URL remains unchanged
+                if (local) {
+                    iframe.src = local;
+                    title.textContent = local;
+                } else {
+                    iframe.src = url;
+                    title.textContent = url;
+                }
                 container.style.display = 'block';
             } catch (err) {
                 window.location.href = url;
