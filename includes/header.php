@@ -33,7 +33,7 @@ if (!isset($title)) $title = "My Site";
 
 <nav class="navbar navbar-expand-lg bg-secondary mb-5">
     <div class="container-fluid">
-        <a id="algoma-link" class="navbar-brand text-white" href="https://algomau.ca" data-external="https://algomau.ca">Algoma University</a>
+        <a id="algoma-link" class="navbar-brand text-white" href="algomau.php" data-external="https://algomau.ca">Algoma University</a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
@@ -60,8 +60,8 @@ if (!isset($title)) $title = "My Site";
 </nav>
 
 <!-- External site iframe container (hidden by default). Click the Algoma University link to load the site here. -->
-<div id="external-frame-container" style="display:none; position:fixed; inset:0; z-index:1050; background:#fff;">
-    <div style="height:48px; background:#343a40; display:flex; align-items:center; padding:0 1rem;">
+<div id="external-frame-container" style="display:none; position:fixed; left:0; right:0; bottom:0; top:0; z-index:1050; background:#fff;">
+    <div id="external-frame-bar" style="height:48px; background:#343a40; display:flex; align-items:center; padding:0 1rem;">
         <button id="external-frame-close" class="btn btn-sm btn-light">Close</button>
         <span id="external-frame-title" class="text-white ms-3">Loading...</span>
     </div>
@@ -80,10 +80,26 @@ if (!isset($title)) $title = "My Site";
 
         if (!link) return;
 
+        function sizeContainerBelowHeader() {
+            // compute header/navbar height so iframe sits below it
+            var headerEl = document.querySelector('nav.navbar');
+            var headerH = 0;
+            if (headerEl) {
+                headerH = Math.ceil(headerEl.getBoundingClientRect().height);
+            }
+            // set top and height so the header remains visible
+            container.style.top = headerH + 'px';
+            container.style.height = 'calc(100% - ' + headerH + 'px)';
+            // ensure the iframe fills the remaining area under the bar
+            iframe.style.height = 'calc(100% - ' + document.getElementById('external-frame-bar').getBoundingClientRect().height + 'px)';
+        }
+
         function openExternal(e){
             var url = link.getAttribute('data-external') || link.href;
             // Try to load in iframe first
             try {
+                // size container before showing to avoid covering header
+                sizeContainerBelowHeader();
                 iframe.src = url;
                 title.textContent = url;
                 container.style.display = 'block';
@@ -104,6 +120,13 @@ if (!isset($title)) $title = "My Site";
         closeBtn.addEventListener('click', function(){
             iframe.src = 'about:blank';
             container.style.display = 'none';
+        });
+
+        // Recompute sizes when window resizes while container is visible
+        window.addEventListener('resize', function(){
+            if (container.style.display === 'block') {
+                try { sizeContainerBelowHeader(); } catch(e){}
+            }
         });
 
         // If iframe fails to load due to X-Frame-Options, detect and fallback after a short timeout
